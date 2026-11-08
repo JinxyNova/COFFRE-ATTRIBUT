@@ -29,6 +29,28 @@ max-radius: 5
 
 
 # ┌──────────────────────────────────────────────────────────────┐
+# │  2bis. ENCHANTEMENTS SANS LIMITE                             │
+# └──────────────────────────────────────────────────────────────┘
+#
+# À l'enclume, deux enchantements identiques de même niveau donnent le
+# niveau +1 sans plafond vanilla (Tranchant V + V = VI, puis VII...).
+# Le message « Trop cher ! » disparaît (le coût est plafonné).
+# Commande : /givefx enchant <enchantement> <niveau>  (objet en main)
+#
+#   enabled          true / false
+#   anvil            l'enclume ignore les niveaux maximum
+#   max-level        niveau maximum (255 = limite technique de Minecraft)
+#   ignore-conflicts true = autorise Tranchant + Châtiment, etc.
+#   cost-cap         coût maximum en niveaux d'XP (39 = jamais « Trop cher »)
+unlimited-enchants:
+  enabled: true
+  anvil: true
+  max-level: 255
+  ignore-conflicts: false
+  cost-cap: 39
+
+
+# ┌──────────────────────────────────────────────────────────────┐
 # │  3. COFFRE QUOTIDIEN                                         │
 # │  Un coffre rempli d'objets aléatoires chaque jour,           │
 # │  près de chaque joueur connecté.                             │

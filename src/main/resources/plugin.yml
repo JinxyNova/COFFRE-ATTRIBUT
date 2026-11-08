@@ -5,8 +5,8 @@ api-version: '1.21'
 description: Effets spéciaux pour les objets créés avec le générateur de /give
 commands:
   givefx:
-    description: Recharge la configuration de GiveFx
-    usage: /givefx reload
+    description: Recharge GiveFx / enchantements sans limite
+    usage: /givefx <reload|enchant>
     permission: givefx.admin
 permissions:
   givefx.admin:

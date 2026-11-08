@@ -161,3 +161,10 @@ Build automatique GitHub
 Le fichier .github/workflows/build.yml compile le plugin à chaque push (Java 25, mvn package).
 Le jar est dans GitHub > Actions > (dernier run) > Artifacts > GiveFx.
 Pour une release : git tag v1.3.1 && git push --tags (le jar est joint à la release).
+
+Enchantements sans limite
+-------------------------
+À l'enclume, deux enchantements identiques de même niveau donnent le niveau +1, sans plafond
+vanilla, et sans « Trop cher ! ». Commande : /givefx enchant <enchantement> <niveau>
+(objet en main, niveau 0 = retirer). Limite : 255 (plafond technique de Minecraft).
+Réglages : section unlimited-enchants de config.yml.

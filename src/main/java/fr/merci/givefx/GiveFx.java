@@ -114,6 +114,7 @@ public final class GiveFx extends JavaPlugin implements Listener {
     private int luckyMin = 2;
     private int luckyMax = 10;
     private boolean luckyWarned = false;
+    private final UnlimitedEnchants unlimited = new UnlimitedEnchants();
     private LocalDate lastDailyDay;
     private NamespacedKey dailyChestKey;
     private double openChance = 100;
@@ -135,6 +136,7 @@ public final class GiveFx extends JavaPlugin implements Listener {
         saveDefaultConfig();
         loadSettings();
         getServer().getPluginManager().registerEvents(this, this);
+        getServer().getPluginManager().registerEvents(unlimited, this);
         // effets "en continu" : une fois par seconde
         Bukkit.getScheduler().runTaskTimer(this, this::tickPassive, 20L, 20L);
         // "jamais de faim" : vérifié 4 fois par seconde
@@ -235,6 +237,7 @@ public final class GiveFx extends JavaPlugin implements Listener {
         cache.clear();
         cooldowns.clear();
         loadDaily();
+        unlimited.load(getConfig());
     }
 
     // ------------------------------------------------------------ événement quotidien
@@ -633,8 +636,24 @@ public final class GiveFx extends JavaPlugin implements Listener {
             sender.sendMessage("GiveFx rechargé.");
             return true;
         }
+        if (args.length > 0 && args[0].equalsIgnoreCase("enchant")) {
+            if (!sender.hasPermission("givefx.admin")) {
+                sender.sendMessage("Permission refusée.");
+                return true;
+            }
+            return unlimited.command(sender, args);
+        }
         sender.sendMessage("/givefx reload");
+        sender.sendMessage("/givefx enchant <enchantement> <niveau>");
         return true;
+    }
+
+    @Override
+    public java.util.List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        if (!sender.hasPermission("givefx.admin")) return java.util.List.of();
+        if (args.length == 1) return java.util.List.of("reload", "enchant");
+        if (args.length >= 2 && args[0].equalsIgnoreCase("enchant")) return unlimited.complete(args);
+        return java.util.List.of();
     }
 
     // ------------------------------------------------------------ lecture des règles
