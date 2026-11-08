@@ -115,6 +115,8 @@ public final class GiveFx extends JavaPlugin implements Listener {
     private int luckyMax = 10;
     private boolean luckyWarned = false;
     private final UnlimitedEnchants unlimited = new UnlimitedEnchants();
+    private final SettingsMenu menu = new SettingsMenu(this);
+    private org.bukkit.configuration.file.YamlConfiguration overrides = new org.bukkit.configuration.file.YamlConfiguration();
     private LocalDate lastDailyDay;
     private NamespacedKey dailyChestKey;
     private double openChance = 100;
@@ -137,6 +139,7 @@ public final class GiveFx extends JavaPlugin implements Listener {
         loadSettings();
         getServer().getPluginManager().registerEvents(this, this);
         getServer().getPluginManager().registerEvents(unlimited, this);
+        getServer().getPluginManager().registerEvents(menu, this);
         // effets "en continu" : une fois par seconde
         Bukkit.getScheduler().runTaskTimer(this, this::tickPassive, 20L, 20L);
         // "jamais de faim" : vérifié 4 fois par seconde
@@ -231,13 +234,166 @@ public final class GiveFx extends JavaPlugin implements Listener {
 
     private void loadSettings() {
         reloadConfig();
+        loadOverrides();
+        cache.clear();
+        cooldowns.clear();
+        reapplySettings();
+    }
+
+    /** Relit les valeurs de la config en mémoire (après un rechargement ou un changement du menu). */
+    private void reapplySettings() {
         allowCommands = getConfig().getBoolean("allow-commands", false);
         maxPower = getConfig().getDouble("max-explosion-power", 20);
         maxRadius = getConfig().getInt("max-radius", 5);
-        cache.clear();
-        cooldowns.clear();
         loadDaily();
         unlimited.load(getConfig());
+    }
+
+    // ------------------------------------------------------------ réglages du menu (menu-settings.yml)
+
+    private File overridesFile() {
+        return new File(getDataFolder(), "menu-settings.yml");
+    }
+
+    /** Les réglages faits en jeu passent avant config.yml (config.yml n'est jamais réécrit). */
+    private void loadOverrides() {
+        overrides = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(overridesFile());
+        for (String k : overrides.getKeys(true)) {
+            Object v = overrides.get(k);
+            if (!(v instanceof ConfigurationSection)) getConfig().set(k, v);
+        }
+    }
+
+    Object setting(String path) {
+        return getConfig().get(path);
+    }
+
+    void applySetting(String path, Object value) {
+        overrides.set(path, value);
+        try {
+            getDataFolder().mkdirs();
+            overrides.save(overridesFile());
+        } catch (IOException e) {
+            getLogger().warning("Impossible d'écrire menu-settings.yml : " + e.getMessage());
+        }
+        getConfig().set(path, value);
+        reapplySettings();
+    }
+
+    void resetOverrides() {
+        try {
+            Files.deleteIfExists(overridesFile().toPath());
+        } catch (IOException e) {
+            getLogger().warning("Impossible de supprimer menu-settings.yml : " + e.getMessage());
+        }
+        loadSettings();
+    }
+
+    void reloadAll() {
+        loadSettings();
+    }
+
+    int lootCount() {
+        return loot.size();
+    }
+
+    /** Pose tout de suite le coffre du jour près du joueur (sans attendre l'heure, sans limite par jour). */
+    void spawnChestNow(Player p) {
+        placeDailyBlock(p);
+    }
+
+    // ------------------------------------------------------------ butin du coffre (commandes /givefx loot)
+
+    private List<Map<String, Object>> currentLootList() {
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (Map<?, ?> m : getConfig().getMapList("daily-event.loot")) {
+            Map<String, Object> c = new java.util.LinkedHashMap<>();
+            for (Map.Entry<?, ?> en : m.entrySet()) c.put(String.valueOf(en.getKey()), en.getValue());
+            out.add(c);
+        }
+        return out;
+    }
+
+    private boolean lootCommand(CommandSender sender, String[] args) {
+        String sub = args.length > 1 ? args[1].toLowerCase() : "list";
+        List<Map<String, Object>> list = currentLootList();
+        switch (sub) {
+            case "list" -> {
+                if (list.isEmpty()) sender.sendMessage("§7Le butin est vide.");
+                int i = 1;
+                for (Map<String, Object> m : list) {
+                    Object max = m.getOrDefault("max", m.getOrDefault("min", 1));
+                    String extra = m.get("chance") != null ? " §6rare " + m.get("chance") + "%" : " §7poids " + m.getOrDefault("weight", 1);
+                    String nm = m.get("name") != null ? " §7(" + m.get("name") + "§7)" : "";
+                    sender.sendMessage("§e#" + i + " §f" + m.get("item") + " §7x" + m.getOrDefault("min", 1) + "-" + max + extra + nm);
+                    i++;
+                }
+            }
+            case "add", "addrare" -> {
+                if (!(sender instanceof Player p)) {
+                    sender.sendMessage("Commande réservée aux joueurs.");
+                    return true;
+                }
+                ItemStack hand = p.getInventory().getItemInMainHand();
+                if (hand.getType().isAir()) {
+                    sender.sendMessage("§cTiens l'objet à ajouter en main principale.");
+                    return true;
+                }
+                boolean rare = sub.equals("addrare");
+                double val;
+                try {
+                    val = args.length > 2 ? Double.parseDouble(args[2]) : (rare ? 1 : 10);
+                } catch (NumberFormatException ex) {
+                    sender.sendMessage("§cNombre invalide : " + args[2]);
+                    return true;
+                }
+                if (val <= 0) {
+                    sender.sendMessage("§cLe nombre doit être supérieur à 0.");
+                    return true;
+                }
+                Map<String, Object> m = new java.util.LinkedHashMap<>();
+                m.put("item", hand.getType().name());
+                m.put("min", hand.getAmount());
+                m.put("max", hand.getAmount());
+                if (rare) m.put("chance", Math.min(100, val));
+                else m.put("weight", val);
+                ItemMeta meta = hand.getItemMeta();
+                if (meta != null) {
+                    if (meta.hasDisplayName()) m.put("name", LegacyComponentSerializer.legacyAmpersand().serialize(meta.displayName()));
+                    List<net.kyori.adventure.text.Component> lore = meta.lore();
+                    if (lore != null && !lore.isEmpty()) {
+                        m.put("lore", lore.stream().map(x -> LegacyComponentSerializer.legacyAmpersand().serialize(x)).toList());
+                    }
+                    String raw = meta.getPersistentDataContainer().get(key, PersistentDataType.STRING);
+                    if (raw != null) m.put("fxraw", raw);
+                }
+                list.add(m);
+                applySetting("daily-event.loot", list);
+                sender.sendMessage("§aAjouté au butin : " + hand.getType().name() + " x" + hand.getAmount()
+                        + (rare ? " (rare " + Math.min(100, val) + "%)" : " (poids " + val + ")") + " §7· #" + list.size());
+            }
+            case "remove" -> {
+                int n;
+                try {
+                    n = args.length > 2 ? Integer.parseInt(args[2]) : -1;
+                } catch (NumberFormatException ex) {
+                    n = -1;
+                }
+                if (n < 1 || n > list.size()) {
+                    sender.sendMessage("§c/givefx loot remove <numéro>  §7(voir /givefx loot list)");
+                    return true;
+                }
+                Map<String, Object> gone = list.remove(n - 1);
+                applySetting("daily-event.loot", list);
+                sender.sendMessage("§aRetiré : " + gone.get("item"));
+            }
+            case "clear" -> {
+                applySetting("daily-event.loot", new ArrayList<Map<String, Object>>());
+                sender.sendMessage("§aButin vidé (le coffre ne contiendra plus que des Lucky Blocks).");
+            }
+            default -> sender.sendMessage("§e/givefx loot <list | add [poids] | addrare <chance%> | remove <n> | clear>");
+        }
+        return true;
     }
 
     // ------------------------------------------------------------ événement quotidien
@@ -287,8 +443,8 @@ public final class GiveFx extends JavaPlugin implements Listener {
             String name = e.get("name") == null ? null : String.valueOf(e.get("name"));
             List<String> lore = new ArrayList<>();
             if (e.get("lore") instanceof List<?> ll) for (Object x : ll) lore.add(String.valueOf(x));
-            String fx = null;
-            if (e.get("fx") instanceof List<?> fl && !fl.isEmpty()) {
+            String fx = e.get("fxraw") instanceof String raw && !raw.isBlank() ? raw : null;
+            if (fx == null && e.get("fx") instanceof List<?> fl && !fl.isEmpty()) {
                 String enc = URLEncoder.encode(toJson(fl).toString(), StandardCharsets.UTF_8);
                 if (parse(enc).isEmpty()) getLogger().warning("Règles fx invalides pour l'objet " + e.get("item"));
                 else fx = enc;
@@ -627,32 +783,48 @@ public final class GiveFx extends JavaPlugin implements Listener {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (args.length > 0 && args[0].equalsIgnoreCase("reload")) {
-            if (!sender.hasPermission("givefx.admin")) {
-                sender.sendMessage("Permission refusée.");
-                return true;
-            }
-            loadSettings();
-            sender.sendMessage("GiveFx rechargé.");
+        if (!sender.hasPermission("givefx.admin")) {
+            sender.sendMessage("Permission refusée.");
             return true;
         }
-        if (args.length > 0 && args[0].equalsIgnoreCase("enchant")) {
-            if (!sender.hasPermission("givefx.admin")) {
-                sender.sendMessage("Permission refusée.");
-                return true;
+        String sub = args.length > 0 ? args[0].toLowerCase() : "menu";
+        switch (sub) {
+            case "menu" -> {
+                if (sender instanceof Player p) menu.open(p);
+                else sender.sendMessage("Le menu est réservé aux joueurs.");
             }
-            return unlimited.command(sender, args);
+            case "reload" -> {
+                loadSettings();
+                sender.sendMessage("GiveFx rechargé.");
+            }
+            case "chest" -> {
+                Player target = args.length > 1 ? Bukkit.getPlayerExact(args[1]) : (sender instanceof Player p ? p : null);
+                if (target == null) sender.sendMessage("§c/givefx chest [joueur]");
+                else spawnChestNow(target);
+            }
+            case "loot" -> {
+                return lootCommand(sender, args);
+            }
+            case "enchant" -> {
+                return unlimited.command(sender, args);
+            }
+            default -> {
+                sender.sendMessage("§e/givefx §7menu  §8- réglages en jeu");
+                sender.sendMessage("§e/givefx chest [joueur]  §8- pose un coffre tout de suite");
+                sender.sendMessage("§e/givefx loot <list|add|addrare|remove|clear>  §8- butin du coffre");
+                sender.sendMessage("§e/givefx enchant <enchantement> <niveau>");
+                sender.sendMessage("§e/givefx reload");
+            }
         }
-        sender.sendMessage("/givefx reload");
-        sender.sendMessage("/givefx enchant <enchantement> <niveau>");
         return true;
     }
 
     @Override
     public java.util.List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (!sender.hasPermission("givefx.admin")) return java.util.List.of();
-        if (args.length == 1) return java.util.List.of("reload", "enchant");
-        if (args.length >= 2 && args[0].equalsIgnoreCase("enchant")) return unlimited.complete(args);
+        if (args.length == 1) return java.util.List.of("menu", "chest", "loot", "enchant", "reload");
+        if (args[0].equalsIgnoreCase("enchant")) return unlimited.complete(args);
+        if (args[0].equalsIgnoreCase("loot") && args.length == 2) return java.util.List.of("list", "add", "addrare", "remove", "clear");
         return java.util.List.of();
     }
 

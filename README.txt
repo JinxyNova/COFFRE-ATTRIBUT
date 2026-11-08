@@ -168,3 +168,14 @@ Enchantements sans limite
 vanilla, et sans « Trop cher ! ». Commande : /givefx enchant <enchantement> <niveau>
 (objet en main, niveau 0 = retirer). Limite : 255 (plafond technique de Minecraft).
 Réglages : section unlimited-enchants de config.yml.
+
+Tout régler depuis Minecraft
+----------------------------
+/givefx            ouvre le menu de réglages (clic gauche +, clic droit -, Maj + clic = grand pas)
+/givefx chest      pose le coffre du jour tout de suite près de toi (pour tester)
+/givefx loot list | add [poids] | addrare <chance%> | remove <n> | clear
+                   choisis ce que le coffre contient : tiens l'objet en main puis /givefx loot add
+                   (nom, description et effets spéciaux de l'objet sont gardés)
+Les réglages du menu sont enregistrés dans plugins/GiveFx/menu-settings.yml et passent avant
+config.yml (config.yml n'est jamais réécrit). Menu > Réinitialiser pour revenir à config.yml.
+Le coffre du jour doit être ACTIVÉ dans le menu (« Coffre quotidien ») pour apparaître tout seul.
