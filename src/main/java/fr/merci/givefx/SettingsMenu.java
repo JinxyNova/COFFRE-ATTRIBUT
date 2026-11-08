@@ -110,8 +110,8 @@ public final class SettingsMenu implements Listener {
 
         for (Setting s : SETTINGS) inv.setItem(s.slot(), settingItem(s));
 
-        inv.setItem(SLOT_CHEST, button(Material.CHEST, "§a§lFaire apparaître un coffre maintenant",
-                List.of("§7Pose le coffre du jour près de toi,", "§7sans attendre l'heure prévue.", "", "§8Clic : poser")));
+        inv.setItem(SLOT_CHEST, button(Material.CHEST, "§a§lCoffre pour TOUS les joueurs maintenant",
+                List.of("§7Pose un coffre près de CHAQUE joueur", "§7connecté, sans attendre l'heure prévue.", "", "§8Clic : poser")));
         inv.setItem(SLOT_RELOAD, button(Material.PAPER, "§b§lRecharger config.yml",
                 List.of("§7Relit config.yml (les réglages de ce menu", "§7restent prioritaires).", "", "§8Clic : recharger")));
         inv.setItem(SLOT_LOOT, button(Material.BOOK, "§f§lButin du coffre : " + plugin.lootCount() + " objet(s)",
@@ -207,7 +207,8 @@ public final class SettingsMenu implements Listener {
 
         if (slot == SLOT_CHEST) {
             p.closeInventory();
-            plugin.spawnChestNow(p);
+            int n = plugin.spawnChestForAll();
+            p.sendMessage("§aCoffre posé près de " + n + " joueur(s).");
             return;
         }
         if (slot == SLOT_RELOAD) {

@@ -172,7 +172,8 @@ Réglages : section unlimited-enchants de config.yml.
 Tout régler depuis Minecraft
 ----------------------------
 /givefx            ouvre le menu de réglages (clic gauche +, clic droit -, Maj + clic = grand pas)
-/givefx chest      pose le coffre du jour tout de suite près de toi (pour tester)
+/givefx chest      pose un coffre tout de suite près de TOUS les joueurs connectés
+                   (/givefx chest <joueur> pour un seul joueur)
 /givefx loot list | add [poids] | addrare <chance%> | remove <n> | clear
                    choisis ce que le coffre contient : tiens l'objet en main puis /givefx loot add
                    (nom, description et effets spéciaux de l'objet sont gardés)

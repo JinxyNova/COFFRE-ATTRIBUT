@@ -302,6 +302,17 @@ public final class GiveFx extends JavaPlugin implements Listener {
         placeDailyBlock(p);
     }
 
+    /** Pose un coffre près de CHAQUE joueur connecté (hors spectateurs). Renvoie le nombre de joueurs concernés. */
+    int spawnChestForAll() {
+        int n = 0;
+        for (Player p : new ArrayList<>(Bukkit.getOnlinePlayers())) {
+            if (p.getGameMode() == GameMode.SPECTATOR) continue;
+            placeDailyBlock(p);
+            n++;
+        }
+        return n;
+    }
+
     // ------------------------------------------------------------ butin du coffre (commandes /givefx loot)
 
     private List<Map<String, Object>> currentLootList() {
@@ -798,9 +809,17 @@ public final class GiveFx extends JavaPlugin implements Listener {
                 sender.sendMessage("GiveFx rechargé.");
             }
             case "chest" -> {
-                Player target = args.length > 1 ? Bukkit.getPlayerExact(args[1]) : (sender instanceof Player p ? p : null);
-                if (target == null) sender.sendMessage("§c/givefx chest [joueur]");
-                else spawnChestNow(target);
+                if (args.length < 2 || args[1].equalsIgnoreCase("all") || args[1].equalsIgnoreCase("tous")) {
+                    int n = spawnChestForAll();
+                    sender.sendMessage("§aCoffre posé près de " + n + " joueur(s).");
+                } else {
+                    Player target = Bukkit.getPlayerExact(args[1]);
+                    if (target == null) sender.sendMessage("§cJoueur introuvable : " + args[1]);
+                    else {
+                        spawnChestNow(target);
+                        sender.sendMessage("§aCoffre posé près de " + target.getName() + ".");
+                    }
+                }
             }
             case "loot" -> {
                 return lootCommand(sender, args);
@@ -810,7 +829,7 @@ public final class GiveFx extends JavaPlugin implements Listener {
             }
             default -> {
                 sender.sendMessage("§e/givefx §7menu  §8- réglages en jeu");
-                sender.sendMessage("§e/givefx chest [joueur]  §8- pose un coffre tout de suite");
+                sender.sendMessage("§e/givefx chest [joueur]  §8- pose un coffre près de TOUS les joueurs (ou d'un seul)");
                 sender.sendMessage("§e/givefx loot <list|add|addrare|remove|clear>  §8- butin du coffre");
                 sender.sendMessage("§e/givefx enchant <enchantement> <niveau>");
                 sender.sendMessage("§e/givefx reload");
