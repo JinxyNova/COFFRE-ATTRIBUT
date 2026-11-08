@@ -57,8 +57,8 @@ public final class UnlimitedEnchants implements Listener {
     public void onAnvil(PrepareAnvilEvent e) {
         if (!enabled || !anvil) return;
         AnvilView view = e.getView();
-        ItemStack first = view.getFirstItem();
-        ItemStack second = view.getSecondItem();
+        ItemStack first = e.getInventory().getItem(0);
+        ItemStack second = e.getInventory().getItem(1);
         if (first == null || second == null || first.getType().isAir() || second.getType().isAir()) return;
 
         boolean secondIsBook = second.getType() == Material.ENCHANTED_BOOK;
