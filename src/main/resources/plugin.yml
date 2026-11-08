@@ -1,0 +1,14 @@
+name: GiveFx
+version: 1.3.0
+main: fr.merci.givefx.GiveFx
+api-version: '1.21'
+description: Effets spéciaux pour les objets créés avec le générateur de /give
+commands:
+  givefx:
+    description: Recharge la configuration de GiveFx
+    usage: /givefx reload
+    permission: givefx.admin
+permissions:
+  givefx.admin:
+    description: Recharger GiveFx
+    default: op

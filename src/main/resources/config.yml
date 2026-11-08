@@ -1,0 +1,414 @@
+# ╔══════════════════════════════════════════════════════════════╗
+# ║                      GiveFx  ·  v1.3                         ║
+# ║        Effets spéciaux pour les objets du générateur         ║
+# ╚══════════════════════════════════════════════════════════════╝
+#
+# Après une modification : /givefx reload  (permission givefx.admin)
+# Astuce : l'éditeur web (givefx-config-editeur.html) génère ce fichier pour toi.
+
+
+# ┌──────────────────────────────────────────────────────────────┐
+# │  1. SÉCURITÉ                                                 │
+# └──────────────────────────────────────────────────────────────┘
+
+# Autoriser l'action « Commande » des objets.
+# Laisse "false" si des joueurs ont le mode créatif : ils pourraient
+# fabriquer un objet qui lance des commandes en console.
+allow-commands: false
+
+
+# ┌──────────────────────────────────────────────────────────────┐
+# │  2. LIMITES                                                  │
+# └──────────────────────────────────────────────────────────────┘
+
+# Puissance maximale d'une explosion (4 = une TNT)
+max-explosion-power: 20
+
+# Rayon maximal de l'action « Casser autour » (1 = zone 3×3×3)
+max-radius: 5
+
+
+# ┌──────────────────────────────────────────────────────────────┐
+# │  3. COFFRE QUOTIDIEN                                         │
+# │  Un coffre rempli d'objets aléatoires chaque jour,           │
+# │  près de chaque joueur connecté.                             │
+# └──────────────────────────────────────────────────────────────┘
+#
+# Un seul coffre par jour et par joueur (mémorisé dans daily.txt).
+# Si personne n'est connecté à l'heure prévue, il attend la prochaine connexion.
+#
+# Réglages :
+#   enabled      true / false
+#   time         heure du serveur, format "HH:mm"
+#   block        bloc posé (CHEST par défaut)
+#   items-min    nombre minimum d'emplacements remplis
+#   items-max    nombre maximum d'emplacements remplis
+#   drop-chance  chance (en %) de trouver un objet NORMAL en cassant un bloc
+#
+# Objets de la liste :
+#   • NORMAL : pas de "chance", tiré selon "weight" (plus grand = plus fréquent)
+#   • RARE   : "chance" en % à chaque tirage (0.001 = 1 sur 100 000)
+#   Autres clés : item, min, max, name (&couleurs), lore (lignes), fx (effets)
+daily-event:
+  enabled: false
+  time: "08:00"            # heure du serveur, format HH:mm
+  block: CHEST             # bloc posé (un coffre par défaut, il contient les objets)
+  items-min: 3             # nombre minimum d'emplacements remplis
+  items-max: 6             # nombre maximum d'emplacements remplis
+  # Petite chance, en cassant un bloc en survie, de trouver un objet normal de cette liste.
+  drop-chance: 2           # en %
+
+  # Lucky Blocks ajoutés dans CHAQUE coffre quotidien (le plugin LuckyBlock doit être installé).
+  #   chance : chance (en %) que le coffre contienne des Lucky Blocks (100 = toujours)
+  #   min/max : nombre de Lucky Blocks, tiré au hasard (64 maximum)
+  lucky-blocks:
+    enabled: true
+    chance: 100
+    min: 2
+    max: 10
+
+  # Événement à l'OUVERTURE du coffre quotidien (une seule fois par coffre).
+  #   chance : chance (en %) qu'un événement se déclenche quand on ouvre le coffre
+  #   events : liste des événements possibles, avec leur poids (weight)
+  #     TNT        : 6 TNT qui explosent autour du coffre
+  #     ORE_RAIN   : pluie de minerais (25 tas, dont des débris de netherite, rarement)
+  #     MIMIC      : un zombie « Faux coffre » apparaît
+  #     CHICKENS   : 8 poulets autour du coffre
+  #     XP         : pluie d'orbes d'expérience
+  #     LIGHTNING  : coup de foudre (visuel uniquement, sans dégâts)
+  #     BOOM       : une explosion (sans casser de blocs)
+  #     RARE       : un objet rare tombe du ciel
+  #     PARTY      : feu d'artifice de particules
+  #     NOTHING    : rien (on dit juste que le coffre est vide)
+  #     COWS       : 5 vaches
+  #     PIGS       : 5 cochons
+  #     SHEEP      : 5 moutons
+  #     JOKE       : une blague au hasard, envoyée au joueur
+  #     CAKE       : 3 gâteaux qui tombent
+  open-events:
+    chance: 100
+    events:
+      - { event: TNT, weight: 3 }
+      - { event: ORE_RAIN, weight: 4 }
+      - { event: MIMIC, weight: 2 }
+      - { event: CHICKENS, weight: 2 }
+      - { event: XP, weight: 3 }
+      - { event: LIGHTNING, weight: 2 }
+      - { event: BOOM, weight: 2 }
+      - { event: RARE, weight: 1 }
+      - { event: PARTY, weight: 2 }
+      - { event: NOTHING, weight: 2 }
+      - { event: COWS, weight: 2 }
+      - { event: PIGS, weight: 2 }
+      - { event: SHEEP, weight: 2 }
+      - { event: JOKE, weight: 3 }
+      - { event: CAKE, weight: 1 }
+
+  # Liste des objets possibles. Deux sortes :
+  #   - objets NORMAUX : pas de "chance". Tirés selon "weight" (plus grand = plus fréquent).
+  #   - objets RARES : "chance" en % à CHAQUE tirage (ex. 0.001 = 1 chance sur 100 000).
+  #     Ils sont testés avant les normaux, indépendamment les uns des autres.
+  #   Autres clés :
+  #   item    : matière de base (ex. STICK, APPLE)
+  #   min/max : quantité tirée au hasard
+  #   name    : nom affiché (codes couleur avec &, ex. &6)
+  #   lore    : lignes de description
+  #   fx      : effets, écrits comme dans le générateur (t = quand, a = action, p = réglages,
+  #             cd = pause en s, ch = chance en %). Liste des effets : voir README.txt.
+  loot:
+    # ─── Objets NORMAUX · vanilla ─────────────────────────────────
+    - { item: BREAD, min: 2, max: 6, weight: 12 }
+    - { item: APPLE, min: 3, max: 8, weight: 10 }
+    - { item: CARROT, min: 4, max: 10, weight: 8 }
+    - { item: BAKED_POTATO, min: 3, max: 8, weight: 8 }
+    - { item: COOKIE, min: 4, max: 12, weight: 8 }
+    - { item: MELON_SLICE, min: 6, max: 16, weight: 6 }
+    - { item: COOKED_BEEF, min: 8, max: 16, weight: 8 }
+    - { item: COBBLESTONE, min: 16, max: 40, weight: 12 }
+    - { item: OAK_PLANKS, min: 16, max: 32, weight: 10 }
+    - { item: STICK, min: 8, max: 16, weight: 8 }
+    - { item: STRING, min: 4, max: 12, weight: 8 }
+    - { item: FEATHER, min: 4, max: 10, weight: 6 }
+    - { item: LEATHER, min: 2, max: 6, weight: 6 }
+    - { item: PAPER, min: 8, max: 16, weight: 8 }
+    - { item: BOOK, min: 1, max: 3, weight: 4 }
+    - { item: INK_SAC, min: 2, max: 6, weight: 6 }
+    - { item: GUNPOWDER, min: 4, max: 12, weight: 8 }
+    - { item: BONE, min: 4, max: 10, weight: 8 }
+    - { item: ROTTEN_FLESH, min: 4, max: 10, weight: 8 }
+    - { item: SPIDER_EYE, min: 2, max: 6, weight: 5 }
+    - { item: BLAZE_POWDER, min: 2, max: 6, weight: 5 }
+    - { item: FLINT, min: 2, max: 6, weight: 8 }
+    - { item: COAL, min: 8, max: 16, weight: 10 }
+    - { item: IRON_INGOT, min: 4, max: 12, weight: 10 }
+    - { item: GOLD_INGOT, min: 3, max: 8, weight: 8 }
+    - { item: COPPER_INGOT, min: 4, max: 12, weight: 10 }
+    - { item: LAPIS_LAZULI, min: 8, max: 20, weight: 8 }
+    - { item: REDSTONE, min: 8, max: 24, weight: 10 }
+    - { item: QUARTZ, min: 4, max: 10, weight: 6 }
+    - { item: GLOWSTONE_DUST, min: 4, max: 10, weight: 6 }
+    - { item: SUGAR, min: 6, max: 16, weight: 8 }
+    - { item: WHEAT, min: 8, max: 16, weight: 8 }
+    - { item: WHEAT_SEEDS, min: 8, max: 16, weight: 8 }
+    - { item: TORCH, min: 8, max: 16, weight: 10 }
+    - { item: EGG, min: 4, max: 8, weight: 6 }
+    - { item: SNOWBALL, min: 8, max: 16, weight: 6 }
+    - { item: ARROW, min: 16, max: 32, weight: 8 }
+    - { item: SLIME_BALL, min: 2, max: 6, weight: 6 }
+    - { item: BLAZE_ROD, min: 1, max: 3, weight: 5 }
+    - { item: EXPERIENCE_BOTTLE, min: 8, max: 16, weight: 6 }
+    - { item: ENDER_PEARL, min: 1, max: 4, weight: 5 }
+    - { item: EMERALD, min: 2, max: 5, weight: 5 }
+    - { item: GOLDEN_APPLE, min: 1, max: 1, weight: 4 }
+    - { item: DIAMOND, min: 1, max: 2, weight: 3 }
+    - { item: NETHERITE_SCRAP, min: 1, max: 2, weight: 2 }
+    - { item: TNT, min: 2, max: 5, weight: 2 }
+    - { item: BUCKET, min: 1, max: 1, weight: 3 }
+    - { item: WATER_BUCKET, min: 1, max: 1, weight: 3 }
+    - { item: LAVA_BUCKET, min: 1, max: 1, weight: 2 }
+    - { item: SHEARS, min: 1, max: 1, weight: 3 }
+    - { item: FISHING_ROD, min: 1, max: 1, weight: 4 }
+    - { item: COMPASS, min: 1, max: 1, weight: 3 }
+    - { item: CLOCK, min: 1, max: 1, weight: 3 }
+    - { item: MAP, min: 1, max: 1, weight: 2 }
+    - { item: BOW, min: 1, max: 1, weight: 4 }
+    - { item: SHIELD, min: 1, max: 1, weight: 3 }
+    - { item: IRON_SWORD, min: 1, max: 1, weight: 4 }
+    - { item: IRON_PICKAXE, min: 1, max: 1, weight: 3 }
+    - { item: IRON_HELMET, min: 1, max: 1, weight: 4 }
+    - { item: IRON_CHESTPLATE, min: 1, max: 1, weight: 3 }
+    - { item: IRON_BOOTS, min: 1, max: 1, weight: 3 }
+    - { item: SADDLE, min: 1, max: 1, weight: 1 }
+    - { item: NAME_TAG, min: 1, max: 1, weight: 1 }
+    - { item: MUSIC_DISC_CAT, min: 1, max: 1, weight: 1 }
+    - { item: ENCHANTED_GOLDEN_APPLE, min: 1, max: 1, weight: 1 }
+    - { item: TOTEM_OF_UNDYING, min: 1, max: 1, weight: 1 }
+
+    # ─── Objets NORMAUX · custom marrants ─────────────────────────
+    - { item: STICK, name: '&6Bâton à poulets', lore: ['&7Un clic, et ça caquète.'], weight: 3,
+        fx: [{t: right, a: summon, p: {mob: chicken, count: 3}, cd: 2}] }
+    - { item: APPLE, name: '&ePomme qui chante', lore: ['&7Tu chantes après l''avoir mangée.'], weight: 3,
+        fx: [{t: eat, a: particle, p: {particle: note, count: 40, sound: entity.villager.celebrate}},
+             {t: eat, a: message, p: {text: '&eTu viens de chanter, bravo !'}}] }
+    - { item: ROTTEN_FLESH, name: '&2Viande pourrie chanceuse', lore: ['&7Dégoûtant. Mais ça porte chance.'], weight: 3,
+        fx: [{t: eat, a: potion, p: {effect: luck, sec: 60, level: 1}}] }
+    - { item: BLAZE_ROD, name: '&bBâton à bulles', lore: ['&7Clic gauche : plein de bulles.'], weight: 3,
+        fx: [{t: left, a: particle, p: {particle: bubble, count: 30}, cd: 0.5}] }
+    - { item: WHEAT, name: '&fBlé surprise', lore: ['&7Clic droit : un mouton apparaît.'], weight: 3,
+        fx: [{t: right, a: summon, p: {mob: sheep, count: 1}, cd: 4}] }
+    - { item: SLIME_BALL, name: '&aGelée qui rebondit', lore: ['&7Repousse tout ce qui approche.'], weight: 2,
+        fx: [{t: right, a: knockup, p: {power: 1.5, radius: 3}, cd: 3},
+             {t: right, a: particle, p: {particle: poof, count: 20}}] }
+    - { item: MACE, name: '&dMarteau en mousse', lore: ['&7Ça fait mal... à la fierté.'], weight: 2,
+        fx: [{t: hit, a: knockup, p: {power: 0.9, radius: 2.5}}] }
+    - { item: CAKE, name: '&dPâtisserie explosive', lore: ['&7Un petit boum, sans casser de blocs.'], weight: 2,
+        fx: [{t: right, a: explode, p: {power: 1, fire: false, blocks: false}, cd: 5}] }
+    - { item: FIREWORK_ROCKET, name: '&cBombe à confettis', lore: ['&7Clic droit : fête générale.'], weight: 2,
+        fx: [{t: right, a: particle, p: {particle: firework, count: 80, sound: entity.firework_rocket.blast}, cd: 1}] }
+    - { item: GOAT_HORN, name: '&9Sifflet des nuages', lore: ['&7Appelle la foudre... pour le spectacle.'], weight: 1,
+        fx: [{t: right, a: lightning, p: {harmless: true}, cd: 20}] }
+    - { item: STONE_BUTTON, name: '&fBouton du poulet', lore: ['&7Accroupis-toi pour appeler un poulet.'], weight: 2,
+        fx: [{t: sneak, a: summon, p: {mob: chicken, count: 1}, cd: 10}] }
+    - { item: APPLE, name: '&cPomme qui pète', lore: ['&7Attention, elle explose en mangeant.'], weight: 1,
+        fx: [{t: eat, a: explode, p: {power: 1, fire: false, blocks: false}}] }
+    - { item: CARVED_PUMPKIN, name: '&6Citrouille rigolote', lore: ['&7Porte-la : tu pétilles.'], weight: 2,
+        fx: [{t: worn, a: particle, p: {particle: happy_villager, count: 6}}] }
+    - { item: COMPASS, name: '&5Boussole cosmique', lore: ['&7Clic droit : un nuage de portails.'], weight: 1,
+        fx: [{t: right, a: particle, p: {particle: portal, count: 60, sound: block.portal.travel}, cd: 2}] }
+
+    # ─── Objets NORMAUX · vanilla (suite) ─────────────────────────
+    - { item: BEETROOT, min: 4, max: 12, weight: 8 }
+    - { item: POTATO, min: 4, max: 12, weight: 8 }
+    - { item: PUMPKIN, min: 2, max: 6, weight: 6 }
+    - { item: PUMPKIN_PIE, min: 1, max: 4, weight: 6 }
+    - { item: GOLDEN_CARROT, min: 2, max: 6, weight: 4 }
+    - { item: HONEY_BOTTLE, min: 1, max: 4, weight: 4 }
+    - { item: MILK_BUCKET, min: 1, max: 1, weight: 3 }
+    - { item: DRIED_KELP, min: 8, max: 16, weight: 8 }
+    - { item: SEA_LANTERN, min: 2, max: 6, weight: 4 }
+    - { item: PRISMARINE_SHARD, min: 4, max: 10, weight: 6 }
+    - { item: NAUTILUS_SHELL, min: 1, max: 2, weight: 3 }
+    - { item: AMETHYST_SHARD, min: 4, max: 10, weight: 6 }
+    - { item: ECHO_SHARD, min: 1, max: 2, weight: 2 }
+    - { item: BONE_MEAL, min: 8, max: 16, weight: 8 }
+    - { item: BRICK, min: 8, max: 16, weight: 6 }
+    - { item: CLAY_BALL, min: 6, max: 16, weight: 6 }
+    - { item: SAND, min: 16, max: 32, weight: 8 }
+    - { item: GRAVEL, min: 16, max: 32, weight: 6 }
+    - { item: DIRT, min: 16, max: 32, weight: 8 }
+    - { item: OAK_LOG, min: 8, max: 16, weight: 8 }
+    - { item: BIRCH_SAPLING, min: 2, max: 6, weight: 6 }
+    - { item: SPRUCE_SAPLING, min: 2, max: 6, weight: 6 }
+    - { item: LILY_PAD, min: 4, max: 10, weight: 4 }
+    - { item: COCOA_BEANS, min: 4, max: 12, weight: 6 }
+    - { item: SWEET_BERRIES, min: 4, max: 12, weight: 6 }
+    - { item: GLOW_BERRIES, min: 2, max: 6, weight: 4 }
+    - { item: LANTERN, min: 1, max: 2, weight: 4 }
+    - { item: CHAIN, min: 4, max: 12, weight: 4 }
+    - { item: IRON_BARS, min: 4, max: 10, weight: 4 }
+    - { item: HOPPER, min: 1, max: 2, weight: 2 }
+    - { item: DISPENSER, min: 1, max: 1, weight: 2 }
+    - { item: PISTON, min: 1, max: 3, weight: 3 }
+    - { item: OBSERVER, min: 1, max: 2, weight: 2 }
+    - { item: SPYGLASS, min: 1, max: 1, weight: 2 }
+    - { item: BELL, min: 1, max: 1, weight: 2 }
+    - { item: FIREWORK_ROCKET, min: 3, max: 8, weight: 6 }
+    - { item: DIAMOND_SWORD, min: 1, max: 1, weight: 2 }
+    - { item: DIAMOND_PICKAXE, min: 1, max: 1, weight: 2 }
+    - { item: TRIDENT, min: 1, max: 1, weight: 1 }
+    - { item: ELYTRA, min: 1, max: 1, weight: 1 }
+
+    # ─── Objets NORMAUX · custom marrants et utiles (suite) ───────
+    - { item: SNOWBALL, name: '&eCanard en plastique', lore: ['&7Il fait coin-coin quand tu le lances.'], weight: 2,
+        fx: [{t: right, a: particle, p: {particle: happy_villager, count: 10, sound: entity.chicken.ambient}, cd: 1}] }
+    - { item: WOODEN_SHOVEL, name: '&6Pelle à vaches', lore: ['&7Clic droit : une vache apparaît.'], weight: 2,
+        fx: [{t: right, a: summon, p: {mob: cow, count: 1}, cd: 4}] }
+    - { item: IRON_PICKAXE, name: '&dPioche chatouilleuse', lore: ['&7Clic gauche : des cœurs et des miaous.'], weight: 2,
+        fx: [{t: left, a: particle, p: {particle: heart, count: 12, sound: entity.cat.purr}, cd: 1}] }
+    - { item: SEA_LANTERN, name: '&bBoule disco', lore: ['&7Clic droit : la piste de danse s’anime.'], weight: 2,
+        fx: [{t: right, a: particle, p: {particle: note, count: 60, sound: block.note_block.pling}, cd: 2}] }
+    - { item: BELL, name: '&6Trompette de fanfare', lore: ['&7Clic droit : fanfare !'], weight: 2,
+        fx: [{t: right, a: particle, p: {particle: note, count: 20, sound: block.note_block.bell}, cd: 2}] }
+    - { item: EGG, name: '&fŒuf de Pâques', lore: ['&7Clic droit : un poulet sort de l’œuf.'], weight: 2,
+        fx: [{t: right, a: summon, p: {mob: chicken, count: 1}, cd: 10}] }
+    - { item: LEATHER_HELMET, name: '&cChapeau de pirate', lore: ['&7Tant que tu le portes : un peu de chance.'], weight: 2,
+        fx: [{t: worn, a: potion, p: {effect: luck, sec: 3, level: 1}}] }
+    - { item: LEATHER_BOOTS, name: '&bChaussures pétillantes', lore: ['&7Tu laisses des étincelles.'], weight: 2,
+        fx: [{t: worn, a: particle, p: {particle: firework, count: 5}}] }
+    - { item: BREAD, name: '&6Pain du voyageur', lore: ['&7Après l’avoir mangé, tu cours plus vite.'], weight: 3,
+        fx: [{t: eat, a: potion, p: {effect: speed, sec: 10, level: 1}}] }
+    - { item: MILK_BUCKET, name: '&fChocolat chaud', lore: ['&7Clic droit : un petit goûter.'], weight: 3,
+        fx: [{t: right, a: feed, p: {amount: 4}, cd: 20}] }
+    - { item: TORCH, name: '&eLampe de mineur', lore: ['&7Tant que tu la tiens : tu vois dans le noir.'], weight: 2,
+        fx: [{t: held, a: potion, p: {effect: night_vision, sec: 3, level: 1}}] }
+
+    # ─── Objets NORMAUX · custom ultra drôles ─────────────────────
+    - { item: NOTE_BLOCK, name: '&6Mégaphone à poulets', lore: ['&7Clic droit : COT COT !'], weight: 2,
+        fx: [{t: right, a: summon, p: {mob: chicken, count: 1}, cd: 3},
+             {t: right, a: message, p: {text: '&e« COT COT ! »'}, cd: 3}] }
+    - { item: COOKED_PORKCHOP, name: '&cPizza de la honte', lore: ['&7Tu sens la honte... mais moins la faim.'], weight: 2,
+        fx: [{t: eat, a: potion, p: {effect: saturation, sec: 1, level: 1}},
+             {t: eat, a: message, p: {text: '&cTu sens la honte... mais moins la faim.'}}] }
+    - { item: WHITE_WOOL, name: '&fBallon de baudruche', lore: ['&7Tant que tu le tiens : tu tombes doucement.'], weight: 2,
+        fx: [{t: held, a: potion, p: {effect: slow_falling, sec: 3, level: 1}},
+             {t: held, a: particle, p: {particle: cloud, count: 3}}] }
+    - { item: SPYGLASS, name: '&9Kazoo', lore: ['&7Clic droit : une note grave.'], weight: 2,
+        fx: [{t: right, a: particle, p: {particle: note, count: 25, sound: block.note_block.bass}, cd: 1}] }
+    - { item: PUMPKIN_PIE, name: '&6Tarte volante', lore: ['&7Clic droit : elle pousse les ennemis.'], weight: 2,
+        fx: [{t: right, a: knockup, p: {power: 0.6, radius: 2}, cd: 2}] }
+    - { item: APPLE, name: '&4Pomme de discorde', lore: ['&7Tu la manges. Des zombies arrivent.'], weight: 1,
+        fx: [{t: eat, a: summon, p: {mob: zombie, count: 2}},
+             {t: eat, a: message, p: {text: '&4Pourquoi tu as mangé ça ?'}}] }
+    - { item: BONE, name: '&4Dents de vampire', lore: ['&7Tes coups te soignent un peu.'], weight: 2,
+        fx: [{t: hit, a: lifesteal, p: {percent: 15}}] }
+    - { item: SNOW_BLOCK, name: '&bCornet de glace', lore: ['&7Clic droit : tout le monde a froid.'], weight: 2,
+        fx: [{t: right, a: freeze, p: {sec: 3, radius: 3}, cd: 4},
+             {t: right, a: particle, p: {particle: snowflake, count: 40}}] }
+    - { item: GOLDEN_HELMET, name: '&eCouronne de roi', lore: ['&7Tant que tu la portes : tu es un héros du village.'], weight: 1,
+        fx: [{t: worn, a: potion, p: {effect: hero_of_the_village, sec: 3, level: 1}}] }
+    - { item: LEATHER_HELMET, name: '&6Chapeau de cow-boy', lore: ['&7Tant que tu le portes : tu résistes aux bousculades.'], weight: 2,
+        fx: [{t: worn, a: attribute, p: {attr: knockback_resistance, amount: 0.5, op: add_value, sec: 3}}] }
+    - { item: CLAY_BALL, name: '&dPâte à modeler', lore: ['&7Clic droit : un petit nuage de bêtise.'], weight: 2,
+        fx: [{t: right, a: particle, p: {particle: poof, count: 20}, cd: 1}] }
+    - { item: BLAZE_POWDER, name: '&cPoudre à éternuer', lore: ['&7Clic gauche : atchoum... tu as la nausée.'], weight: 1,
+        fx: [{t: left, a: potion, p: {effect: nausea, sec: 5, level: 1}, cd: 5},
+             {t: left, a: particle, p: {particle: cloud, count: 40}}] }
+
+    # ─── Objets NORMAUX · custom encore plus drôles ───────────────
+    - { item: LEATHER_LEGGINGS, name: '&2Chaussette sentante', lore: ['&7Ça sent... les particules.'], weight: 2,
+        fx: [{t: worn, a: particle, p: {particle: poof, count: 4}}] }
+    - { item: SHEARS, name: '&fTondeuse à moutons', lore: ['&7Clic droit : un mouton pousse.'], weight: 2,
+        fx: [{t: right, a: summon, p: {mob: sheep, count: 1}, cd: 5}] }
+    - { item: CAKE, name: '&dGâteau porte-bonheur', lore: ['&7Tu le manges, tu as de la chance.'], weight: 2,
+        fx: [{t: eat, a: potion, p: {effect: luck, sec: 60, level: 1}},
+             {t: eat, a: message, p: {text: '&dTu viens de manger un gâteau porte-bonheur !'}}] }
+    - { item: STICK, name: '&dBaguette de la gentillesse', lore: ['&7Clic droit : des cœurs pour tout le monde.'], weight: 2,
+        fx: [{t: right, a: particle, p: {particle: heart, count: 30}, cd: 1}] }
+    - { item: DIAMOND_SHOVEL, name: '&ePelle à blagues', lore: ['&7Clic droit : une blague de qualité.'], weight: 1,
+        fx: [{t: right, a: message, p: {text: '&eQuel est le comble du coffre ? Être vide... et ravi.'}, cd: 4}] }
+    - { item: POTION, name: '&ePotion de rigolade', lore: ['&7Clic droit : tu sautes comme un ressort.'], weight: 2,
+        fx: [{t: right, a: potion, p: {effect: jump_boost, sec: 10, level: 3}, cd: 10}] }
+    - { item: CARROT, name: '&6Carotte spatiale', lore: ['&7Tu la manges, et tout le monde vole.'], weight: 1,
+        fx: [{t: eat, a: knockup, p: {power: 1.2, radius: 3}},
+             {t: eat, a: message, p: {text: '&6Tu viens de manger une carotte spatiale !'}}] }
+    - { item: IRON_HELMET, name: '&7Casque de chevalier en carton', lore: ['&7Il est très solide. Enfin, il a l’air.'], weight: 2,
+        fx: [{t: worn, a: particle, p: {particle: cloud, count: 3}}] }
+    - { item: PAPER, name: '&fRouleau de papier toilette', lore: ['&7Clic droit : oups, plus de papier !'], weight: 2,
+        fx: [{t: right, a: particle, p: {particle: cloud, count: 60}, cd: 3},
+             {t: right, a: message, p: {text: '&fOups... plus de papier !'}, cd: 3}] }
+    - { item: SNOWBALL, name: '&9Balle de tennis', lore: ['&7Clic droit : smash !'], weight: 2,
+        fx: [{t: right, a: knockup, p: {power: 2, radius: 2}, cd: 2}] }
+    - { item: BEETROOT, name: '&4Brocoli maudit', lore: ['&7Tu manges. Tu as faim. Encore.'], weight: 1,
+        fx: [{t: eat, a: potion, p: {effect: hunger, sec: 5, level: 1}}] }
+    - { item: WHITE_CARPET, name: '&bTapis volant', lore: ['&7Tant que tu le tiens : tu flottes un peu.'], weight: 1,
+        fx: [{t: held, a: attribute, p: {attr: gravity, amount: -0.3, op: add_value, sec: 3}}] }
+
+    # ─── Objets NORMAUX · custom qui font de VRAIES choses drôles ─
+    - { item: SADDLE, name: '&6Selle de taxi-cochon', lore: ['&7Clic droit : un cochon t''emmène faire un tour.'], weight: 2,
+        fx: [{t: right, a: pig_taxi, p: {sec: 20}, cd: 15}] }
+    - { item: ENDER_EYE, name: '&5Échangeur de place', lore: ['&7Clic droit : tu échanges ta place avec le mob le plus proche.'], weight: 2,
+        fx: [{t: right, a: swap, p: {radius: 12}, cd: 5}] }
+    - { item: IRON_BLOCK, name: '&8Parapluie à enclumes', lore: ['&7Clic droit : des enclumes tombent sur les mobs autour.'], weight: 1,
+        fx: [{t: right, a: anvil_rain, p: {count: 2, radius: 5}, cd: 10}] }
+    - { item: COMPARATOR, name: '&6Mélangeur de barre', lore: ['&7Clic droit : ta barre d’outils est mélangée.'], weight: 2,
+        fx: [{t: right, a: shuffle, cd: 10}] }
+    - { item: SLIME_BLOCK, name: '&aTrampoline de poche', lore: ['&7Clic droit : tu rebondis.'], weight: 2,
+        fx: [{t: right, a: bounce, p: {power: 1.5}, cd: 1}] }
+    - { item: JUKEBOX, name: '&eMégaphone du serveur', lore: ['&7Clic droit : tout le serveur te lit.'], weight: 1,
+        fx: [{t: right, a: broadcast, p: {text: '&e📢 &f[Mégaphone] &7Quelqu’un vient de crier très fort...'}, cd: 30}] }
+    - { item: STICK, name: '&cBâton des géants', lore: ['&7Clic droit : un zombie géant apparaît.'], weight: 1,
+        fx: [{t: right, a: summon, p: {mob: zombie, count: 1, scale: 3}, cd: 5}] }
+    - { item: CROSSBOW, name: '&fCanon à poulets', lore: ['&7Tu tires : des poulets tombent du ciel.'], weight: 2,
+        fx: [{t: shoot, a: summon, p: {mob: chicken, count: 2, height: 10}, cd: 1}] }
+    - { item: LEAD, name: '&fLasso à vaches', lore: ['&7Clic droit : des vaches tombent du ciel.'], weight: 2,
+        fx: [{t: right, a: summon, p: {mob: cow, count: 3, height: 15}, cd: 8}] }
+    - { item: ZOMBIE_HEAD, name: '&2Tête qui appelle', lore: ['&7Clic droit : des zombies tombent du ciel.'], weight: 1,
+        fx: [{t: right, a: summon, p: {mob: zombie, count: 3, height: 12}, cd: 15}] }
+
+    # ─── Objets TRÈS RARES · custom 0,001 % ───────────────────────
+    # Utiles et "cheat" : 1 chance sur 100 000 à chaque tirage.
+    - { item: POTION, name: '&bGourde infinie', lore: ['&7Clic droit : petits soins.'], chance: 0.001,
+        fx: [{t: right, a: heal, p: {amount: 2}, cd: 4}] }
+    - { item: FISHING_ROD, name: '&aCanne à soins', lore: ['&7Clic droit : un peu de vie.'], chance: 0.001,
+        fx: [{t: right, a: heal, p: {amount: 2}, cd: 3}] }
+    - { item: ENDER_PEARL, name: '&5Perle du dépanneur', lore: ['&7Clic droit : téléportation rapide.'], chance: 0.001,
+        fx: [{t: right, a: teleport, cd: 3}] }
+    - { item: TURTLE_HELMET, name: '&3Casque de tortue', lore: ['&7Tant que tu le portes : tu respires sous l''eau.'], chance: 0.001,
+        fx: [{t: worn, a: potion, p: {effect: water_breathing, sec: 15, level: 1}}] }
+    - { item: IRON_CHESTPLATE, name: '&cPlastron anti-feu', lore: ['&7Tant que tu le portes : pas de feu.'], chance: 0.001,
+        fx: [{t: worn, a: potion, p: {effect: fire_resistance, sec: 15, level: 1}}] }
+    - { item: LEATHER_BOOTS, name: '&eBottes à ressort', lore: ['&7Tu sautes plus haut.'], chance: 0.001,
+        fx: [{t: worn, a: attribute, p: {attr: jump_strength, amount: 0.5, op: add_value, sec: 3}}] }
+    - { item: LEATHER_BOOTS, name: '&aChaussures de course', lore: ['&7Tu cours plus vite.'], chance: 0.001,
+        fx: [{t: worn, a: attribute, p: {attr: movement_speed, amount: 0.3, op: add_multiplied_base, sec: 3}}] }
+    - { item: FEATHER, name: '&fPlume anti-chute', lore: ['&7Tu tombes de plus haut sans dégâts.'], chance: 0.001,
+        fx: [{t: worn, a: attribute, p: {attr: safe_fall_distance, amount: 10, op: add_value, sec: 3}}] }
+    - { item: LEATHER_HELMET, name: '&9Lunettes de nuit', lore: ['&7Tu vois dans le noir.'], chance: 0.001,
+        fx: [{t: worn, a: potion, p: {effect: night_vision, sec: 15, level: 1}}] }
+    - { item: POTION, name: '&cPotion de courage', lore: ['&7Clic droit : force pendant 15 s.'], chance: 0.001,
+        fx: [{t: right, a: potion, p: {effect: strength, sec: 15, level: 1}, cd: 10}] }
+    - { item: IRON_PICKAXE, name: '&6Pioche turbo', lore: ['&7Tant que tu la tiens : tu mines plus vite.'], chance: 0.001,
+        fx: [{t: held, a: potion, p: {effect: haste, sec: 3, level: 2}}] }
+    - { item: RABBIT_FOOT, name: '&aPatte porte-bonheur', lore: ['&7Tant que tu la tiens : un peu de chance.'], chance: 0.001,
+        fx: [{t: held, a: potion, p: {effect: luck, sec: 3, level: 1}}] }
+    - { item: COOKIE, name: '&dCookie tornade', lore: ['&7Tu fonces après l''avoir mangé.'], chance: 0.001,
+        fx: [{t: eat, a: potion, p: {effect: speed, sec: 30, level: 2}}] }
+    # Taille : très rares aussi.
+    - { item: APPLE, name: '&6Pomme lunaire', lore: ['&7Tu flottes un peu plus longtemps.'], chance: 0.001,
+        fx: [{t: eat, a: attribute, p: {attr: gravity, amount: -0.5, op: add_value, sec: 20}}] }
+    - { item: APPLE, name: '&bPomme géante', lore: ['&7Tu deviens deux fois plus grand.'], chance: 0.001,
+        fx: [{t: eat, a: attribute, p: {attr: scale, amount: 1, op: add_value, sec: 30}}] }
+    - { item: BROWN_MUSHROOM, name: '&7Champignon minuscule', lore: ['&7Tu rapetisses.'], chance: 0.001,
+        fx: [{t: eat, a: attribute, p: {attr: scale, amount: -0.5, op: add_value, sec: 30}}] }
+
+    # ─── Objets TRÈS RARES · cheat 0,001 % (suite) ────────────────
+    - { item: DIAMOND_SWORD, name: '&4Épée des dieux', lore: ['&7Tes coups font 10 fois plus de dégâts.'], chance: 0.001,
+        fx: [{t: held, a: damage_boost, p: {mult: 10, add: 20}}] }
+    - { item: DIAMOND_CHESTPLATE, name: '&9Armure invincible', lore: ['&7Tant que tu la portes : aucun dégât.'], chance: 0.001,
+        fx: [{t: worn, a: damage_reduce, p: {percent: 100}}] }
+    - { item: ELYTRA, name: '&bAiles du créatif', lore: ['&7Tant que tu les portes : tu voles comme en créatif.'], chance: 0.001,
+        fx: [{t: worn, a: fly}] }
+    - { item: BREAD, name: '&eEstomac sans fond', lore: ['&7Tant que tu le tiens : jamais de faim.'], chance: 0.001,
+        fx: [{t: held, a: nohunger}] }
+    - { item: IRON_PICKAXE, name: '&6Pioche ×3 butin', lore: ['&7Chaque bloc cassé donne trois fois plus de butin.'], chance: 0.001,
+        fx: [{t: break, a: drop_mult, p: {mult: 3}}] }
